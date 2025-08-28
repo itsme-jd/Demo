@@ -1,3 +1,5 @@
+```yaml
+serviceAccount: 'projects/YOUR_PROJECT_ID/serviceAccounts/your-custom-sa@your-project-id.iam.gserviceaccount.com'
 options:
   logging: CLOUD_LOGGING_ONLY
 steps:
@@ -9,13 +11,25 @@ steps:
     args:
       - '-c'
       - |
+        apt-get update && apt-get install -y jq > /dev/null
+        echo "jq installed."
+
         echo "Starting JSON syntax validation..."
+        VALIDATION_FAILED=0
+
         find . -name "*.json" -print0 | while IFS= read -r -d $'\0' json_file; do
           echo "Validating: $$json_file"
           if ! jq . "$$json_file" > /dev/null; then
             echo "ERROR: Invalid JSON syntax in $$json_file"
-            exit 1
+            VALIDATION_FAILED=1
           fi
         done
-        echo "All JSON files are syntactically valid."
+
+        if [ $$VALIDATION_FAILED -eq 1 ]; then
+          echo "JSON validation failed for one or more files. Failing build."
+          exit 1
+        else
+          echo "All JSON files are syntactically valid."
+        fi
     id: 'json-syntax-validation'
+```
