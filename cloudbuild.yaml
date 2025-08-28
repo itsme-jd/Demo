@@ -1,0 +1,19 @@
+steps:
+  - name: 'gcr.io/cloud-builders/git'
+    args: ['fetch', '--unshallow']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Starting JSON syntax validation..."
+        find . -name "*.json" -print0 | while IFS= read -r -d $'\0' json_file; do
+          echo "Validating: $$json_file"
+          if ! jq . "$$json_file" > /dev/null; then
+            echo "ERROR: Invalid JSON syntax in $$json_file"
+            exit 1
+          fi
+        done
+        echo "All JSON files are syntactically valid."
+    id: 'json-syntax-validation'
